@@ -1,4 +1,5 @@
-import express, { Request, Response } from 'express'
+import express from 'express'
+import type { Request, Response } from 'express'
 
 const app = express()
 const PORT = process.env.PORT ?? 3001
@@ -14,7 +15,7 @@ app.get('/quote', (_req: Request, res: Response): void => {
     author: 'System',
     timestamp: new Date().toISOString(),
   }
-  
+
   res.json(quote)
 })
 

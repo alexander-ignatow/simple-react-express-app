@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 
-function App(): React.JSX.Element {
+const App = (): React.JSX.Element => {
   const [count, setCount] = useState(0)
 
   return (
