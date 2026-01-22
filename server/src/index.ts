@@ -1,18 +1,29 @@
 import express from 'express'
 import type { Request, Response } from 'express'
 
+import { generateRandomQuote } from './services/quoteGenerator'
+
 const app = express()
 const PORT = process.env.PORT ?? 3001
+const API_TOKEN = 'Bearer secret-quote-token-12345'
 
 // Middleware
 app.use(express.json())
 
+// Authentication middleware
+const authenticateToken = (req: Request, res: Response, next: () => void): void => {
+  const authHeader = req.headers.authorization
+  if (!authHeader || authHeader !== API_TOKEN) {
+    res.status(401).json({ error: 'Unauthorized: Invalid or missing authentication token' })
+    return
+  }
+  next()
+}
+
 // Routes
-app.get('/quote', (_req: Request, res: Response): void => {
-  // Stub implementation - returns a placeholder quote
+app.get('/quote', authenticateToken, (_req: Request, res: Response): void => {
   const quote = {
-    text: 'This is a stub quote endpoint',
-    author: 'System',
+    ...generateRandomQuote(),
     timestamp: new Date().toISOString(),
   }
 
