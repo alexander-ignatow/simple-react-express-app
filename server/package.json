@@ -10,10 +10,16 @@
     "start": "node dist/index.js",
     "lint": "tsc --noEmit"
   },
-  "keywords": ["express", "typescript", "api"],
+  "keywords": [
+    "express",
+    "typescript",
+    "api"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/cors": "^2.8.19",
+    "cors": "^2.8.6",
     "express": "^5.2.1"
   },
   "devDependencies": {

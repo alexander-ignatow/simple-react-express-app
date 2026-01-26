@@ -1,13 +1,47 @@
 import express from 'express'
+import cors from 'cors'
 import type { Request, Response } from 'express'
 
 import { generateRandomQuote } from './services/quoteGenerator'
 
 const app = express()
 const PORT = process.env.PORT ?? 3001
-const API_TOKEN = 'Bearer secret-quote-token-12345'
+const API_TOKEN = process.env.API_TOKEN || 'Bearer secret-quote-token-12345'
+const NODE_ENV = process.env.NODE_ENV || 'development'
+
+// CORS configuration
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
+      callback(null, true)
+      return
+    }
+
+    // Development: allow all localhost origins
+    if (NODE_ENV === 'development' && origin.startsWith('http://localhost')) {
+      callback(null, true)
+      return
+    }
+
+    // Production: check against CLIENT_URL
+    const clientUrl = process.env.CLIENT_URL
+    if (NODE_ENV === 'production' && clientUrl && origin === clientUrl) {
+      callback(null, true)
+      return
+    }
+
+    // Deny by default
+    callback(new Error('Not allowed by CORS'))
+  },
+  credentials: true,
+  methods: ['GET', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  maxAge: 86400,
+}
 
 // Middleware
+app.use(cors(corsOptions))
 app.use(express.json())
 
 // Authentication middleware
