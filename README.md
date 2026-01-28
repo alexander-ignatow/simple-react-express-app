@@ -153,6 +153,7 @@ npm run lint
 
 - Node.js (v18 or higher recommended)
 - npm or yarn
+- Docker and Docker Compose (for Docker setup)
 
 ### Installation
 
@@ -170,6 +171,8 @@ npm run lint
 
 ### Development
 
+#### Local Development
+
 1. **Start the server:**
    ```bash
    cd server
@@ -183,6 +186,74 @@ npm run lint
    npm run dev
    ```
    Client runs on http://localhost:5173
+
+#### Docker Development
+
+**Build and run the server:**
+
+```bash
+# From root directory
+docker build -f server/Dockerfile -t simple-react-express-app-server .
+docker run -e PORT=3001 -e NODE_ENV=development -p 3001:3001 simple-react-express-app-server
+```
+
+**Build and run the client:**
+
+```bash
+# From client directory, pass environment variables at build time
+docker build \
+  --build-arg VITE_API_URL=http://localhost:3001 \
+  --build-arg VITE_API_TOKEN=secret-quote-token-12345 \
+  --build-arg VITE_PORT=5173 \
+  -t simple-react-express-app-client .
+
+docker run -p 5173:5173 simple-react-express-app-client
+```
+
+**Or use Docker Compose for both services:**
+
+```bash
+# Build and start both containers
+docker compose up --build
+
+# Run in background
+docker compose up -d --build
+```
+
+**Services:**
+- Client: http://localhost:5173
+- Server: http://localhost:3001
+
+**Environment Variables:**
+
+Create `.env` files for each service:
+
+**Server (.env):**
+```
+PORT=3001
+NODE_ENV=development
+```
+
+**Client (.env):**
+```
+VITE_API_URL=http://localhost:3001
+VITE_API_TOKEN=secret-quote-token-12345
+VITE_PORT=5173
+```
+
+Pass environment variables to Docker:
+
+```bash
+# Using just docker (if ran from /server folder)
+docker build -t simple-react-express-app-server .
+docker run -e PORT=3001 -e NODE_ENV=development -p 3001:3001 simple-react-express-app-server
+
+# Using env files
+docker compose --env-file ./server/.env --env-file ./client/.env up
+
+# Or set inline
+docker run -e PORT=3001 -e NODE_ENV=development -p 3001:3001 simple-react-express-app-server
+```
 
 ### Production Build
 
@@ -205,6 +276,16 @@ npm run lint
    cd server
    npm start
    ```
+
+#### Docker Production Build
+
+```bash
+# Build production images
+docker compose -f docker-compose.yml build
+
+# Run in production
+docker compose -f docker-compose.yml up -d
+```
 
 ## Features
 

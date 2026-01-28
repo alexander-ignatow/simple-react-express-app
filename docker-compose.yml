@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - NODE_ENV=development
+    command: npm run dev
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://server:3001
+        - VITE_API_TOKEN=${VITE_API_TOKEN:-secret-quote-token-12345}
+        - VITE_PORT=5173
+    ports:
+      - "5173:5173"
+    depends_on:
+      - server

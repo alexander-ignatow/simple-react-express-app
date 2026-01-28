@@ -44,21 +44,34 @@ const corsOptions = {
 app.use(cors(corsOptions))
 app.use(express.json())
 
+// Request logging middleware
+app.use((req: Request, _: Response, next: () => void): void => {
+  const timestamp = new Date().toISOString()
+  console.log(`[${timestamp}] ${req.method} ${req.path}`)
+  next()
+})
+
 // Authentication middleware
 const authenticateToken = (req: Request, res: Response, next: () => void): void => {
   const authHeader = req.headers.authorization
+  const timestamp = new Date().toISOString()
+
   if (!authHeader || authHeader !== API_TOKEN) {
+    console.log(`[${timestamp}] AUTH FAILED - ${req.method} ${req.path}`)
     res.status(401).json({ error: 'Unauthorized: Invalid or missing authentication token' })
     return
   }
+
+  console.log(`[${timestamp}] AUTH SUCCESS - ${req.method} ${req.path}`)
   next()
 }
 
 // Routes
 app.get('/quote', authenticateToken, (_req: Request, res: Response): void => {
+  const timestamp = new Date().toISOString()
   const quote = {
     ...generateRandomQuote(),
-    timestamp: new Date().toISOString(),
+    timestamp,
   }
 
   res.json(quote)
