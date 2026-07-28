@@ -3,10 +3,9 @@ import { type ButtonHTMLAttributes, forwardRef, type JSX } from 'react'
 
 import { cn } from '@/lib/utils'
 
-import { type ButtonVariants,buttonVariants } from './button-variants'
+import { type ButtonVariants, buttonVariants } from './button-variants'
 
-export interface ButtonProps
-  extends ButtonHTMLAttributes<HTMLButtonElement>, ButtonVariants {
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>, ButtonVariants {
   asChild?: boolean
 }
 

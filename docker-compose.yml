@@ -1,26 +1,42 @@
-version: '3.8'
+name: student-docker-demo
 
 services:
   server:
     build:
       context: ./server
-      dockerfile: Dockerfile
-    ports:
-      - "3001:3001"
+      target: production
     environment:
-      - PORT=3001
-      - NODE_ENV=development
-    command: npm run dev
+      PORT: 3001
+      NODE_ENV: production
+      API_TOKEN: ${API_TOKEN:-demo-token}
+      CLIENT_URL: http://localhost:${CLIENT_PORT:-5173}
+    ports:
+      - "${SERVER_PORT:-3001}:3001"
+    healthcheck:
+      test:
+        ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3001/health').then(response => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
 
   client:
     build:
       context: ./client
-      dockerfile: Dockerfile
+      target: production
       args:
-        - VITE_API_URL=http://server:3001
-        - VITE_API_TOKEN=${VITE_API_TOKEN:-secret-quote-token-12345}
-        - VITE_PORT=5173
+        VITE_API_URL: http://localhost:${SERVER_PORT:-3001}
+        VITE_API_TOKEN: ${API_TOKEN:-demo-token}
     ports:
-      - "5173:5173"
+      - "${CLIENT_PORT:-5173}:8080"
     depends_on:
-      - server
+      server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped

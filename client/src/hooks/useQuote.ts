@@ -23,12 +23,8 @@ export const useQuote = (): UseQuoteReturn => {
     setError(null)
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL as string | undefined
-      const apiToken = import.meta.env.VITE_API_TOKEN as string | undefined
-
-      if (!apiUrl || !apiToken) {
-        throw new Error('API configuration is missing')
-      }
+      const apiUrl = (import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:3001'
+      const apiToken = (import.meta.env.VITE_API_TOKEN as string | undefined) || 'demo-token'
 
       const response = await fetch(`${apiUrl}/quote`, {
         method: 'GET',

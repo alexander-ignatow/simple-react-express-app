@@ -41,12 +41,7 @@ export const WisdomGenerator = (): React.JSX.Element => {
 
             {/* Button */}
             <div className="flex justify-center">
-              <Button
-                size="lg"
-                onClick={handleGenerateClick}
-                disabled={isLoading}
-                className="px-8"
-              >
+              <Button size="lg" onClick={handleGenerateClick} disabled={isLoading} className="px-8">
                 {isLoading ? 'Generating...' : 'Generate Some Wisdom'}
               </Button>
             </div>

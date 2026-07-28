@@ -1,327 +1,141 @@
-# Simple React Express App
+# React + Express Docker demo
 
-A modern full-stack application with a React frontend and Express backend, both using TypeScript.
+This small quote generator is a teaching project for running the same React and Express application locally, in individual Docker containers, and with Docker Compose. The client calls the server's authenticated `GET /quote` endpoint; `GET /health` is available for health checks.
 
-## Project Structure
+## Prerequisites
 
-```
-simple-react-express-app/
-├── client/                 # React frontend application
-│   ├── src/
-│   │   ├── components/    # React components
-│   │   │   └── ui/       # shadcn/ui components (Button, Textarea)
-│   │   ├── lib/          # Utility functions
-│   │   ├── App.tsx       # Main application component
-│   │   └── main.tsx      # Application entry point
-│   ├── public/           # Static assets
-│   ├── eslint.config.js  # ESLint configuration with import-order rules
-│   ├── tsconfig.json     # TypeScript configuration (strict mode enabled)
-│   ├── tailwind.config.js # Tailwind CSS configuration
-│   ├── vite.config.ts    # Vite bundler configuration
-│   └── package.json      # Frontend dependencies and scripts
-│
-├── server/               # Express backend application
-│   ├── src/
-│   │   └── index.ts     # Express server with /quote endpoint
-│   ├── dist/            # Compiled JavaScript output
-│   ├── tsconfig.json    # TypeScript configuration (strict mode enabled)
-│   └── package.json     # Backend dependencies and scripts
-│
-└── README.md            # This file
-```
+- Node.js 24+ and npm for local runs
+- Docker Desktop for Docker runs
 
-## Client (Frontend)
+All launch methods use the same three settings:
 
-### Technologies
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `SERVER_PORT` | `3001` | Host port for the Express API |
+| `CLIENT_PORT` | `5173` | Host port for the React app |
+| `API_TOKEN` | `demo-token` | Demo token used by the client and API |
 
-- **Vite** - Fast build tool and dev server
-- **React 19** - UI library
-- **TypeScript 5.9** - Type-safe JavaScript
-- **Tailwind CSS 3** - Utility-first CSS framework
-- **shadcn/ui** - Beautiful, accessible component library
-- **ESLint** - Code linting with modern rules
-  - `simple-import-sort` plugin for import ordering
-  - Strict TypeScript rules (no-explicit-any, etc.)
-- **Prettier** - Code formatting
-
-### TypeScript Configuration
-
-The client uses strict TypeScript settings:
-- `strict: true`
-- `noImplicitAny: true`
-- `strictNullChecks: true`
-- All strict mode flags enabled
-
-### Available Scripts
+Defaults work out of the box. To customize them once for the local launcher and Compose, create a root `.env` file:
 
 ```bash
-cd client
-
-# Development server with hot reload
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-
-# Lint code
-npm run lint
-
-# Fix linting issues
-npm run lint:fix
-
-# Format code with Prettier
-npm run format
-
-# Check formatting
-npm run format:check
+cp .env.example .env
 ```
 
-### shadcn/ui Components
+The token is deliberately a browser-visible demo value, not a secret-management pattern for a real application.
 
-The following components are initialized and ready to use:
-- **Button** - Various styles (default, secondary, outline, destructive, ghost, link)
-- **Textarea** - Styled text input area
+## 1. Run directly with npm
 
-Import them from `@/components/ui/button` and `@/components/ui/textarea`.
-
-## Server (Backend)
-
-### Technologies
-
-- **Express 5** - Web framework
-- **TypeScript 5.9** - Type-safe JavaScript
-- **ts-node-dev** - Development server with hot reload
-
-### TypeScript Configuration
-
-The server uses strict TypeScript settings:
-- `strict: true`
-- `noImplicitAny: true`
-- All strict mode flags enabled
-- `noUnusedLocals: true`
-- `noUnusedParameters: true`
-- `noImplicitReturns: true`
-
-### API Endpoints
-
-#### GET /quote
-Returns a stub quote object.
-
-**Response:**
-```json
-{
-  "text": "This is a stub quote endpoint",
-  "author": "System",
-  "timestamp": "2026-01-22T12:00:00.000Z"
-}
-```
-
-#### GET /health
-Health check endpoint.
-
-**Response:**
-```json
-{
-  "status": "ok"
-}
-```
-
-### Available Scripts
+Install dependencies once, then start both services with one command:
 
 ```bash
-cd server
-
-# Development server with hot reload
-npm run dev
-
-# Build for production
-npm run build
-
-# Run production build
-npm start
-
-# Type-check without emitting files
-npm run lint
+chmod +x start.sh
+./start.sh
 ```
 
-## Getting Started
+Open [http://localhost:5173](http://localhost:5173). The API is at [http://localhost:3001/health](http://localhost:3001/health). The script starts both development servers, reloads changes, and stops both when you press `Ctrl+C`.
 
-### Prerequisites
+To make a local production-style build and serve it, use:
 
-- Node.js (v18 or higher recommended)
-- npm or yarn
-- Docker and Docker Compose (for Docker setup)
+```bash
+./start.sh prod
+```
 
-### Installation
+This is useful for a quick build check. For a production container setup, use the Compose production command below.
 
-1. **Install client dependencies:**
-   ```bash
-   cd client
-   npm install
-   ```
+If you prefer two terminals, the equivalent development commands are:
 
-2. **Install server dependencies:**
-   ```bash
-   cd server
-   npm install
-   ```
+```bash
+cd server && npm run dev
+cd client && npm run dev
+```
+
+## 2. Run with Docker
+
+Build and run each image separately from the repository root. The `API_TOKEN` value must match in both commands.
+
+### Development containers
+
+```bash
+docker build --target development -t quote-server:dev ./server
+docker run --rm -p 3001:3001 -e PORT=3001 -e NODE_ENV=development -e API_TOKEN=demo-token quote-server:dev
+```
+
+In a second terminal:
+
+```bash
+docker build --target development -t quote-client:dev ./client
+docker run --rm -p 5173:5173 \
+  -e VITE_API_URL=http://localhost:3001 \
+  -e VITE_API_TOKEN=demo-token \
+  quote-client:dev
+```
+
+These are development servers inside containers. For live source editing, Docker Compose is more convenient because it mounts the source code automatically.
+
+### Production containers
+
+```bash
+docker build -t quote-server:prod ./server
+docker run --rm -p 3001:3001 \
+  -e PORT=3001 \
+  -e NODE_ENV=production \
+  -e CLIENT_URL=http://localhost:5173 \
+  -e API_TOKEN=demo-token \
+  quote-server:prod
+```
+
+In a second terminal, build the client with the browser-facing API URL and the same token:
+
+```bash
+docker build -t quote-client:prod ./client \
+  --build-arg VITE_API_URL=http://localhost:3001 \
+  --build-arg VITE_API_TOKEN=demo-token
+docker run --rm -p 5173:8080 quote-client:prod
+```
+
+The production client is a static build served by Nginx on container port `8080`.
+
+## 3. Run with Docker Compose
+
+Compose is the simplest Docker workflow: it starts the two services, networking, ports, and health checks together.
 
 ### Development
 
-#### Local Development
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
 
-1. **Start the server:**
-   ```bash
-   cd server
-   npm run dev
-   ```
-   Server runs on http://localhost:3001
+Source folders are mounted into the containers, so both services reload as you edit. Stop with `Ctrl+C`.
 
-2. **Start the client (in a new terminal):**
-   ```bash
-   cd client
-   npm run dev
-   ```
-   Client runs on http://localhost:5173
-
-#### Docker Development
-
-**Build and run the server:**
+### Production
 
 ```bash
-# From root directory
-docker build -f server/Dockerfile -t simple-react-express-app-server .
-docker run -e PORT=3001 -e NODE_ENV=development -p 3001:3001 simple-react-express-app-server
+docker compose up --build -d
 ```
 
-**Build and run the client:**
+Open [http://localhost:5173](http://localhost:5173), inspect status with `docker compose ps`, and stop with:
 
 ```bash
-# From client directory, pass environment variables at build time
-docker build \
-  --build-arg VITE_API_URL=http://localhost:3001 \
-  --build-arg VITE_API_TOKEN=secret-quote-token-12345 \
-  --build-arg VITE_PORT=5173 \
-  -t simple-react-express-app-client .
-
-docker run -p 5173:5173 simple-react-express-app-client
+docker compose down
 ```
 
-**Or use Docker Compose for both services:**
+The base [docker-compose.yml](docker-compose.yml) is the production configuration; [docker-compose.dev.yml](docker-compose.dev.yml) changes the same services to development targets and adds bind mounts.
+
+## Environment alignment
+
+There is one source of truth for shared values: the root `.env` file created from [.env.example](.env.example).
+
+- `./start.sh` reads it and exports the server and Vite variables.
+- Docker Compose reads it for port mappings, the server token, and the client build/runtime values.
+- Individual `docker run` commands show the same values explicitly because Docker does not automatically read Compose's `.env` file.
+
+The client always receives `VITE_API_URL=http://localhost:$SERVER_PORT`, because the browser—not the client container—makes the API request. The server expects `Authorization: Bearer $API_TOKEN`.
+
+## Useful checks
 
 ```bash
-# Build and start both containers
-docker compose up --build
-
-# Run in background
-docker compose up -d --build
+npm run lint --prefix client
+npm run build --prefix client
+npm run lint --prefix server
+npm run build --prefix server
 ```
-
-**Services:**
-- Client: http://localhost:5173
-- Server: http://localhost:3001
-
-**Environment Variables:**
-
-Create `.env` files for each service:
-
-**Server (.env):**
-```
-PORT=3001
-NODE_ENV=development
-```
-
-**Client (.env):**
-```
-VITE_API_URL=http://localhost:3001
-VITE_API_TOKEN=secret-quote-token-12345
-VITE_PORT=5173
-```
-
-Pass environment variables to Docker:
-
-```bash
-# Using just docker (if ran from /server folder)
-docker build -t simple-react-express-app-server .
-docker run -e PORT=3001 -e NODE_ENV=development -p 3001:3001 simple-react-express-app-server
-
-# Using env files
-docker compose --env-file ./server/.env --env-file ./client/.env up
-
-# Or set inline
-docker run -e PORT=3001 -e NODE_ENV=development -p 3001:3001 simple-react-express-app-server
-```
-
-### Production Build
-
-1. **Build the client:**
-   ```bash
-   cd client
-   npm run build
-   ```
-   Output: `client/dist/`
-
-2. **Build the server:**
-   ```bash
-   cd server
-   npm run build
-   ```
-   Output: `server/dist/`
-
-3. **Run the server:**
-   ```bash
-   cd server
-   npm start
-   ```
-
-#### Docker Production Build
-
-```bash
-# Build production images
-docker compose -f docker-compose.yml build
-
-# Run in production
-docker compose -f docker-compose.yml up -d
-```
-
-## Features
-
-### Client
-- ✅ Vite for fast development and optimized builds
-- ✅ React with TypeScript
-- ✅ Tailwind CSS for styling
-- ✅ shadcn/ui component library (Button, Textarea)
-- ✅ ESLint with import-order rules
-- ✅ Prettier for code formatting
-- ✅ Strict TypeScript configuration
-- ✅ Path aliases configured (`@/` imports)
-
-### Server
-- ✅ Express with TypeScript
-- ✅ Stub GET /quote endpoint
-- ✅ Health check endpoint
-- ✅ Strict TypeScript configuration
-- ✅ Hot reload in development
-
-## Code Quality
-
-### Linting
-Both client and server use strict TypeScript configurations to prevent `any` types and enforce type safety.
-
-### Import Ordering
-The client uses `eslint-plugin-simple-import-sort` to automatically organize imports.
-
-### Code Formatting
-The client uses Prettier with a consistent configuration:
-- No semicolons
-- Single quotes
-- 2-space indentation
-- Trailing commas (ES5)
-- 100-character line width
-
-## License
-
-ISC

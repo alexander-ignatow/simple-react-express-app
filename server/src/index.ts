@@ -5,8 +5,8 @@ import type { Request, Response } from 'express'
 import { generateRandomQuote } from './services/quoteGenerator'
 
 const app = express()
-const PORT = process.env.PORT ?? 3001
-const API_TOKEN = process.env.API_TOKEN || 'Bearer secret-quote-token-12345'
+const PORT = Number(process.env.PORT ?? 3001)
+const API_TOKEN = process.env.API_TOKEN || 'demo-token'
 const NODE_ENV = process.env.NODE_ENV || 'development'
 
 // CORS configuration
@@ -56,7 +56,7 @@ const authenticateToken = (req: Request, res: Response, next: () => void): void 
   const authHeader = req.headers.authorization
   const timestamp = new Date().toISOString()
 
-  if (!authHeader || authHeader !== API_TOKEN) {
+  if (!authHeader || authHeader !== `Bearer ${API_TOKEN}`) {
     console.log(`[${timestamp}] AUTH FAILED - ${req.method} ${req.path}`)
     res.status(401).json({ error: 'Unauthorized: Invalid or missing authentication token' })
     return
