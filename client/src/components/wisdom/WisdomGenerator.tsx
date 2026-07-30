@@ -5,7 +5,7 @@ import { QuoteDisplay } from '@/components/wisdom/QuoteDisplay'
 import { useQuote } from '@/hooks/useQuote'
 
 export const WisdomGenerator = (): React.JSX.Element => {
-  const { quote, error, isLoading, fetchQuote } = useQuote()
+  const { quote, error, isConfigured, isLoading, fetchQuote } = useQuote()
 
   const handleGenerateClick = (): void => {
     void fetchQuote()
@@ -41,8 +41,17 @@ export const WisdomGenerator = (): React.JSX.Element => {
 
             {/* Button */}
             <div className="flex justify-center">
-              <Button size="lg" onClick={handleGenerateClick} disabled={isLoading} className="px-8">
-                {isLoading ? 'Generating...' : 'Generate Some Wisdom'}
+              <Button
+                size="lg"
+                onClick={handleGenerateClick}
+                disabled={isLoading || !isConfigured}
+                className="px-8"
+              >
+                {isLoading
+                  ? 'Generating...'
+                  : isConfigured
+                    ? 'Generate Some Wisdom'
+                    : 'API Token Required'}
               </Button>
             </div>
           </div>

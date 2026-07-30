@@ -19,7 +19,11 @@ fi
 
 SERVER_PORT="${SERVER_PORT:-3001}"
 CLIENT_PORT="${CLIENT_PORT:-5173}"
-API_TOKEN="${API_TOKEN:-demo-token}"
+
+if [[ -z "${API_TOKEN:-}" ]]; then
+  echo "API_TOKEN is required. Copy .env.example to .env and set API_TOKEN." >&2
+  exit 1
+fi
 
 ensure_dependencies() {
   local service="$1"

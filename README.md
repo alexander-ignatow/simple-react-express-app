@@ -2,6 +2,8 @@
 
 This small quote generator is a teaching project for running the same React and Express application locally, in individual Docker containers, and with Docker Compose. The client calls the server's authenticated `GET /quote` endpoint; `GET /health` is available for health checks.
 
+For a line-by-line explanation of the Dockerfiles and Compose configuration, read the [Docker learning guide](DOCKER_LEARNING_GUIDE.md).
+
 ## Prerequisites
 
 - Node.js 24+ and npm for local runs
@@ -13,21 +15,30 @@ All launch methods use the same three settings:
 | --- | --- | --- |
 | `SERVER_PORT` | `3001` | Host port for the Express API |
 | `CLIENT_PORT` | `5173` | Host port for the React app |
-| `API_TOKEN` | `demo-token` | Demo token used by the client and API |
+| `API_TOKEN` | — | Required token supplied to the browser client and accepted by the API |
 
-Defaults work out of the box. To customize them once for the local launcher and Compose, create a root `.env` file:
+The browser client intentionally has no token fallback: `VITE_API_TOKEN` must be provided through its environment. The server keeps `demo-token` as its local-development fallback.
+
+For the two-terminal local workflow, create the client environment file once:
+
+```bash
+cp client/.env.example client/.env.local
+```
+
+For the one-click launcher and Docker Compose, create a root `.env` file once:
 
 ```bash
 cp .env.example .env
 ```
 
-The token is deliberately a browser-visible demo value, not a secret-management pattern for a real application.
+The example uses a browser-visible demo token, not a secret-management pattern for a real application.
 
 ## 1. Run directly with npm
 
 Install dependencies once, then start both services with one command:
 
 ```bash
+cp .env.example .env
 chmod +x start.sh
 ./start.sh
 ```
@@ -45,7 +56,10 @@ This is useful for a quick build check. For a production container setup, use th
 If you prefer two terminals, the equivalent development commands are:
 
 ```bash
+# Terminal 1
 cd server && npm run dev
+
+# Terminal 2 (after creating client/.env.local from client/.env.example)
 cd client && npm run dev
 ```
 
@@ -99,6 +113,12 @@ The production client is a static build served by Nginx on container port `8080`
 
 Compose is the simplest Docker workflow: it starts the two services, networking, ports, and health checks together.
 
+Create the required root environment file before starting either Compose mode:
+
+```bash
+cp .env.example .env
+```
+
 ### Development
 
 ```bash
@@ -125,11 +145,11 @@ The base [docker-compose.yml](docker-compose.yml) is the production configuratio
 
 There is one source of truth for shared values: the root `.env` file created from [.env.example](.env.example).
 
-- `./start.sh` reads it and exports the server and Vite variables.
-- Docker Compose reads it for port mappings, the server token, and the client build/runtime values.
+- `./start.sh` requires it and exports the server and Vite variables.
+- Docker Compose requires it for the client token, port mappings, server token, and client build/runtime values.
 - Individual `docker run` commands show the same values explicitly because Docker does not automatically read Compose's `.env` file.
 
-The client always receives `VITE_API_URL=http://localhost:$SERVER_PORT`, because the browser—not the client container—makes the API request. The server expects `Authorization: Bearer $API_TOKEN`.
+The client always receives `VITE_API_URL=http://localhost:$SERVER_PORT`, because the browser—not the client container—makes the API request. It must also receive `VITE_API_TOKEN`; otherwise, it visibly reports the missing configuration and disables quote generation. The server expects `Authorization: Bearer $API_TOKEN`.
 
 ## Useful checks
 

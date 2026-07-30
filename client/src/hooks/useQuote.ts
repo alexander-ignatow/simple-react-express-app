@@ -6,26 +6,35 @@ export interface Quote {
   timestamp: string
 }
 
+const MISSING_API_TOKEN_MESSAGE =
+  'Missing API token. Set VITE_API_TOKEN in client/.env.local, then restart the client.'
+
 interface UseQuoteReturn {
   quote: Quote | null
   error: string | null
+  isConfigured: boolean
   isLoading: boolean
   fetchQuote: () => Promise<void>
 }
 
 export const useQuote = (): UseQuoteReturn => {
+  const apiUrl = (import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:3001'
+  const apiToken = (import.meta.env.VITE_API_TOKEN as string | undefined)?.trim() ?? ''
+  const isConfigured = apiToken.length > 0
   const [quote, setQuote] = useState<Quote | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(isConfigured ? null : MISSING_API_TOKEN_MESSAGE)
   const [isLoading, setIsLoading] = useState(false)
 
   const fetchQuote = async (): Promise<void> => {
+    if (!isConfigured) {
+      setError(MISSING_API_TOKEN_MESSAGE)
+      return
+    }
+
     setIsLoading(true)
     setError(null)
 
     try {
-      const apiUrl = (import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:3001'
-      const apiToken = (import.meta.env.VITE_API_TOKEN as string | undefined) || 'demo-token'
-
       const response = await fetch(`${apiUrl}/quote`, {
         method: 'GET',
         headers: {
@@ -48,5 +57,5 @@ export const useQuote = (): UseQuoteReturn => {
     }
   }
 
-  return { quote, error, isLoading, fetchQuote }
+  return { quote, error, isConfigured, isLoading, fetchQuote }
 }

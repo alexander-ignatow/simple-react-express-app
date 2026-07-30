@@ -15,7 +15,7 @@ services:
       target: development
     environment:
       VITE_API_URL: http://localhost:${SERVER_PORT:-3001}
-      VITE_API_TOKEN: ${API_TOKEN:-demo-token}
+      VITE_API_TOKEN: "${API_TOKEN:?Set API_TOKEN in the root .env file}"
     ports: !override
       - "${CLIENT_PORT:-5173}:5173"
     volumes:
