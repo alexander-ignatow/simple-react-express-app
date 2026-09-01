@@ -1,0 +1,10 @@
+{
+  "name": "simple-react-express-app",
+  "private": true,
+  "workspaces": ["client", "server"],
+  "scripts": {
+    "test": "npm run test --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  }
+}
