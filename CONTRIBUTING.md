@@ -29,7 +29,7 @@ Thank you for contributing to Simple React Express App! This document outlines t
   import { Button } from '@/components/ui/button';
   import { useCallback } from 'react';
   import type { ComponentProps } from 'react';
-  
+
   // ❌ Avoid
   import Button from '@/components/ui/button';
   import * as React from 'react';
@@ -45,7 +45,7 @@ Thank you for contributing to Simple React Express App! This document outlines t
   const MyComponent = () => {
     return <div>Hello</div>;
   };
-  
+
   // ❌ Avoid
   function MyComponent() {
     return <div>Hello</div>;
@@ -99,7 +99,7 @@ Thank you for contributing to Simple React Express App! This document outlines t
   // ✅ Preferred
   import type { User, ApiResponse } from '@/types';
   import { getUserById } from '@/services';
-  
+
   // ❌ Avoid
   import * as Types from '@/types';
   import { getUserById, User } from '@/services';

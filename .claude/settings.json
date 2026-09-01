@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(npm test:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run lint:*)",
+      "Bash(git diff:*)",
+      "Bash(git status:*)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(rm:*)",
+      "Bash(docker:*)",
+      "Bash(docker compose:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "statusMessage": "Formatting with Prettier",
+            "timeout": 30,
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath // empty' | { read -r f; case \"$f\" in */client/src/*) ;; *) exit 0 ;; esac; \"${CLAUDE_PROJECT_DIR}/client/node_modules/.bin/prettier\" --write --ignore-unknown \"$f\" >/dev/null 2>&1 && printf '{\"systemMessage\":\"Prettier formatted %s\",\"suppressOutput\":true}\\n' \"${f##*/}\"; } 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
