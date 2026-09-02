@@ -5,12 +5,15 @@ import { ANY_AUTHOR, AuthorSelect } from '@/components/wisdom/AuthorSelect'
 import { ErrorMessage } from '@/components/wisdom/ErrorMessage'
 import { LoadingMessage } from '@/components/wisdom/LoadingMessage'
 import { QuoteDisplay } from '@/components/wisdom/QuoteDisplay'
+import { ThemeSwitcher } from '@/components/wisdom/ThemeSwitcher'
 import { useQuote } from '@/hooks/useQuote'
+import { useTheme } from '@/hooks/useTheme'
 
 const ANY_AUTHOR_LABEL = 'Any author'
 
 export const WisdomGenerator = (): React.JSX.Element => {
   const { quote, authors, error, isConfigured, isLoading, fetchQuote } = useQuote()
+  const { theme, setTheme } = useTheme()
   const [selectedAuthor, setSelectedAuthor] = useState<string>(ANY_AUTHOR)
 
   const handleGenerateClick = (): void => {
@@ -47,7 +50,12 @@ export const WisdomGenerator = (): React.JSX.Element => {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-6 py-16">
+    <div className="relative flex min-h-screen items-center justify-center bg-background px-6 py-16">
+      {/* Chrome, not content: kept outside the 640px column the mock composes. */}
+      <div className="absolute right-6 top-6">
+        <ThemeSwitcher theme={theme} onChange={setTheme} />
+      </div>
+
       <div className="mx-auto flex w-full max-w-column flex-col gap-6 font-ui text-foreground sm:gap-8">
         {/* Header */}
         <div className="flex flex-col gap-3 text-center">

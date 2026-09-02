@@ -5,6 +5,22 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>client</title>
+    <script>
+      // Runs before first paint so a stored dark choice does not flash light.
+      // The storage key is mirrored in client/src/hooks/useTheme.ts.
+      ;(function () {
+        try {
+          var stored = localStorage.getItem('wisdom-theme')
+          var theme = stored === 'light' || stored === 'dark' ? stored : 'auto'
+          var isDark =
+            theme === 'dark' ||
+            (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.classList.toggle('dark', isDark)
+        } catch (e) {
+          /* No storage or no matchMedia: fall back to light. */
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
