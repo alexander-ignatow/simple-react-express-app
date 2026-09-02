@@ -1,14 +1,18 @@
+import { useState } from 'react'
+
 import { Button } from '@/components/ui/button'
+import { ANY_AUTHOR, AuthorSelect } from '@/components/wisdom/AuthorSelect'
 import { ErrorMessage } from '@/components/wisdom/ErrorMessage'
 import { LoadingMessage } from '@/components/wisdom/LoadingMessage'
 import { QuoteDisplay } from '@/components/wisdom/QuoteDisplay'
 import { useQuote } from '@/hooks/useQuote'
 
 export const WisdomGenerator = (): React.JSX.Element => {
-  const { quote, error, isConfigured, isLoading, fetchQuote } = useQuote()
+  const { quote, authors, error, isConfigured, isLoading, fetchQuote } = useQuote()
+  const [selectedAuthor, setSelectedAuthor] = useState<string>(ANY_AUTHOR)
 
   const handleGenerateClick = (): void => {
-    void fetchQuote()
+    void fetchQuote(selectedAuthor === ANY_AUTHOR ? undefined : selectedAuthor)
   }
 
   return (
@@ -38,6 +42,14 @@ export const WisdomGenerator = (): React.JSX.Element => {
 
             {/* Error Display */}
             {error && <ErrorMessage message={error} />}
+
+            {/* Author Filter */}
+            <AuthorSelect
+              authors={authors}
+              value={selectedAuthor}
+              disabled={isLoading || !isConfigured}
+              onChange={setSelectedAuthor}
+            />
 
             {/* Button */}
             <div className="flex justify-center">

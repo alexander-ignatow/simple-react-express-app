@@ -2,7 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import type { Request, Response } from 'express'
 
-import { generateRandomQuote } from './services/quoteGenerator'
+import { generateQuoteByAuthor, generateRandomQuote, listAuthors } from './services/quoteGenerator'
 
 const app = express()
 const PORT = Number(process.env.PORT ?? 3001)
@@ -67,14 +67,29 @@ const authenticateToken = (req: Request, res: Response, next: () => void): void 
 }
 
 // Routes
-app.get('/quote', authenticateToken, (_req: Request, res: Response): void => {
+app.get('/quote', authenticateToken, (req: Request, res: Response): void => {
   const timestamp = new Date().toISOString()
-  const quote = {
-    ...generateRandomQuote(),
-    timestamp,
+  const requestedAuthor = typeof req.query.author === 'string' ? req.query.author.trim() : ''
+
+  // No `author` query parameter means the original behaviour: a random quote.
+  if (requestedAuthor.length === 0) {
+    res.json({ ...generateRandomQuote(), timestamp })
+    return
   }
 
-  res.json(quote)
+  const quote = generateQuoteByAuthor(requestedAuthor)
+
+  if (!quote) {
+    res.status(404).json({ error: `No quotes found for author '${requestedAuthor}'` })
+    return
+  }
+
+  res.json({ ...quote, timestamp })
+})
+
+// Authors available for the /quote?author= filter
+app.get('/authors', authenticateToken, (_req: Request, res: Response): void => {
+  res.json({ authors: listAuthors() })
 })
 
 // Health check endpoint

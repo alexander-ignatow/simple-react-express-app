@@ -1,4 +1,4 @@
-interface Quote {
+export interface Quote {
   text: string
   author: string
 }
@@ -86,7 +86,33 @@ const QUOTES: Quote[] = [
   }
 ]
 
+const pickRandom = (quotes: Quote[]): Quote => {
+  const randomIndex = Math.floor(Math.random() * quotes.length)
+  return quotes[randomIndex]
+}
+
 export const generateRandomQuote = (): Quote => {
-  const randomIndex = Math.floor(Math.random() * QUOTES.length)
-  return QUOTES[randomIndex]
+  return pickRandom(QUOTES)
+}
+
+/**
+ * Returns a random quote from the given author, or null when the author has no
+ * quotes. Matching is case-insensitive and ignores surrounding whitespace so
+ * that `?author=batman` and `?author=Batman` behave the same.
+ */
+export const generateQuoteByAuthor = (author: string): Quote | null => {
+  const normalizedAuthor = author.trim().toLowerCase()
+  const matches = QUOTES.filter((quote) => quote.author.toLowerCase() === normalizedAuthor)
+
+  if (matches.length === 0) {
+    return null
+  }
+
+  return pickRandom(matches)
+}
+
+/** The distinct authors available for filtering, alphabetically sorted. */
+export const listAuthors = (): string[] => {
+  const authors = new Set(QUOTES.map((quote) => quote.author))
+  return [...authors].sort((a, b) => a.localeCompare(b))
 }
