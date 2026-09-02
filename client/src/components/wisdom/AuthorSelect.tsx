@@ -18,27 +18,19 @@ export const AuthorSelect = ({
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <label
-        htmlFor="author-select"
-        className="text-sm font-medium text-slate-700 dark:text-slate-300"
-      >
-        Author
-      </label>
-      <select
-        id="author-select"
-        value={value}
-        onChange={handleChange}
-        disabled={disabled}
-        className="h-10 w-full rounded-md border border-slate-200 bg-transparent px-3 py-2 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-950 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:text-slate-100 dark:focus-visible:ring-slate-300"
-      >
-        <option value={ANY_AUTHOR}>Any author</option>
-        {authors.map((author) => (
-          <option key={author} value={author}>
-            {author}
-          </option>
-        ))}
-      </select>
-    </div>
+    <select
+      aria-label="Author"
+      value={value}
+      onChange={handleChange}
+      disabled={disabled}
+      className="wg-select-caret h-12 w-full appearance-none rounded-control border border-input bg-background pl-4 pr-[38px] font-ui text-control font-medium text-foreground transition-[border-color,color] duration-[160ms] ease-design hover:not-disabled:border-foreground/45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/70 disabled:cursor-not-allowed disabled:opacity-50 sm:h-[46px] sm:w-auto"
+    >
+      <option value={ANY_AUTHOR}>Any author</option>
+      {authors.map((author) => (
+        <option key={author} value={author}>
+          {author}
+        </option>
+      ))}
+    </select>
   )
 }

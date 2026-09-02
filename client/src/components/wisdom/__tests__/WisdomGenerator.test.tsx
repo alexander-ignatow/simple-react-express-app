@@ -92,6 +92,51 @@ describe('WisdomGenerator', () => {
     })
   })
 
+  it('labels the quote with the active filter, not the quote author', async () => {
+    vi.stubEnv('VITE_API_TOKEN', 'demo-token')
+    fetchMock.mockImplementation((url: string) => {
+      requestedUrls.push(url)
+
+      if (url.includes('/authors')) {
+        return Promise.resolve(jsonResponse({ authors: AUTHORS }))
+      }
+
+      return Promise.resolve(
+        jsonResponse({ text: 'A quote', author: 'Yoda', timestamp: '2026-01-01T00:00:00.000Z' })
+      )
+    })
+
+    render(<WisdomGenerator />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: 'Batman' })).toBeTruthy()
+    })
+
+    fireEvent.change(screen.getByLabelText('Author'), { target: { value: 'Batman' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Generate Some Wisdom' }))
+
+    // Attribution is the quote's own author; the meta beside it is the filter.
+    expect(await screen.findByText('Yoda', { selector: 'span' })).toBeTruthy()
+    expect(screen.getByText('Batman', { selector: 'span' })).toBeTruthy()
+  })
+
+  it('replaces a displayed quote with the error rather than stacking them', async () => {
+    vi.stubEnv('VITE_API_TOKEN', 'demo-token')
+
+    render(<WisdomGenerator />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Generate Some Wisdom' }))
+    expect(await screen.findByText('A quote')).toBeTruthy()
+
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(jsonResponse({ error: 'Request blew up' }, { status: 500 }))
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Generate Some Wisdom' }))
+
+    expect(await screen.findByText('Request blew up')).toBeTruthy()
+    expect(screen.queryByText('A quote')).toBeNull()
+  })
+
   it('shows the server error message when the author has no quotes', async () => {
     vi.stubEnv('VITE_API_TOKEN', 'demo-token')
     fetchMock.mockImplementation((url: string) => {

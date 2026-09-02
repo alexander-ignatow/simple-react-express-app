@@ -7,6 +7,8 @@ import { LoadingMessage } from '@/components/wisdom/LoadingMessage'
 import { QuoteDisplay } from '@/components/wisdom/QuoteDisplay'
 import { useQuote } from '@/hooks/useQuote'
 
+const ANY_AUTHOR_LABEL = 'Any author'
+
 export const WisdomGenerator = (): React.JSX.Element => {
   const { quote, authors, error, isConfigured, isLoading, fetchQuote } = useQuote()
   const [selectedAuthor, setSelectedAuthor] = useState<string>(ANY_AUTHOR)
@@ -15,58 +17,72 @@ export const WisdomGenerator = (): React.JSX.Element => {
     void fetchQuote(selectedAuthor === ANY_AUTHOR ? undefined : selectedAuthor)
   }
 
+  // The panel holds exactly one of four contents, so a stale quote is never
+  // shown next to a failure.
+  const renderPanelContent = (): React.JSX.Element => {
+    if (isLoading) {
+      return <LoadingMessage />
+    }
+
+    if (error) {
+      return <ErrorMessage message={error} />
+    }
+
+    if (quote) {
+      return (
+        <QuoteDisplay
+          quote={quote}
+          filterLabel={selectedAuthor === ANY_AUTHOR ? ANY_AUTHOR_LABEL : selectedAuthor}
+        />
+      )
+    }
+
+    return (
+      <div className="flex flex-col gap-3">
+        <p className="m-0 font-display text-empty italic text-muted-foreground">
+          Press the button to generate some wisdom
+        </p>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="container mx-auto p-8 max-w-2xl">
-        <div className="space-y-8">
-          {/* Header */}
-          <div className="text-center space-y-2">
-            <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-100">
-              Wisdom Generator
-            </h1>
-            <p className="text-muted-foreground">Receive a dose of wisdom with every click</p>
-          </div>
+    <div className="flex min-h-screen items-center justify-center bg-background px-6 py-16">
+      <div className="mx-auto flex w-full max-w-column flex-col gap-6 font-ui text-foreground sm:gap-8">
+        {/* Header */}
+        <div className="flex flex-col gap-3 text-center">
+          <h1 className="m-0 font-display text-heading-sm font-normal sm:text-heading">
+            Wisdom Generator
+          </h1>
+          <p className="m-0 font-mono text-meta uppercase text-muted-foreground">
+            Receive a dose of wisdom with every click
+          </p>
+        </div>
 
-          {/* Content Section */}
-          <div className="space-y-6">
-            {/* Quote Display */}
-            {isLoading && <LoadingMessage />}
-            {!isLoading && quote && <QuoteDisplay quote={quote} />}
-            {!isLoading && !quote && (
-              <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-6">
-                <p className="text-slate-600 dark:text-slate-400 text-center">
-                  Press the button to generate some wisdom
-                </p>
-              </div>
-            )}
+        {/* One panel, four possible contents */}
+        <div className="relative flex min-h-[168px] flex-col justify-center rounded-panel border border-border bg-card px-6 pb-6 pt-8 text-card-foreground shadow-panel sm:min-h-[196px] sm:px-8 sm:pb-8 sm:pt-11">
+          {renderPanelContent()}
+        </div>
 
-            {/* Error Display */}
-            {error && <ErrorMessage message={error} />}
-
-            {/* Author Filter */}
-            <AuthorSelect
-              authors={authors}
-              value={selectedAuthor}
-              disabled={isLoading || !isConfigured}
-              onChange={setSelectedAuthor}
-            />
-
-            {/* Button */}
-            <div className="flex justify-center">
-              <Button
-                size="lg"
-                onClick={handleGenerateClick}
-                disabled={isLoading || !isConfigured}
-                className="px-8"
-              >
-                {isLoading
-                  ? 'Generating...'
-                  : isConfigured
-                    ? 'Generate Some Wisdom'
-                    : 'API Token Required'}
-              </Button>
-            </div>
-          </div>
+        {/* Controls */}
+        <div className="flex flex-col justify-center gap-2 sm:flex-row">
+          <AuthorSelect
+            authors={authors}
+            value={selectedAuthor}
+            disabled={isLoading || !isConfigured}
+            onChange={setSelectedAuthor}
+          />
+          <Button
+            onClick={handleGenerateClick}
+            disabled={isLoading || !isConfigured}
+            // tailwind-merge cannot classify custom theme keys, so `rounded-control`
+            // and `text-control` here would fail to displace the shadcn base's
+            // `rounded-md`/`text-primary-foreground`. Arbitrary values carry the units
+            // twMerge needs to group them correctly.
+            className="h-12 w-full rounded-[8px] bg-primary px-6 text-[14px] font-semibold tracking-[0.005em] text-primary-foreground shadow-primary-glow transition-[background-color,transform] duration-[160ms] ease-design hover:bg-primary/88 hover:not-disabled:-translate-y-px active:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring/70 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none sm:h-[46px] sm:w-auto"
+          >
+            {isLoading ? 'Generating...' : isConfigured ? 'Generate Some Wisdom' : 'API Token Required'}
+          </Button>
         </div>
       </div>
     </div>

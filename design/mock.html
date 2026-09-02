@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wisdom Generator — design specification</title>
+<style>
+/* ============================================================
+   TOKENS — copy these into src/index.css verbatim.
+   HSL triplets, no hsl() wrapper, matching the existing repo format.
+   ============================================================ */
+:root {
+  --background: 40 33% 96%;
+  --foreground: 225 18% 14%;
+  --card: 40 40% 99%;
+  --card-foreground: 225 18% 14%;
+  --popover: 40 40% 99%;
+  --popover-foreground: 225 18% 14%;
+  --primary: 36 62% 42%;
+  --primary-foreground: 40 40% 98%;
+  --secondary: 40 20% 90%;
+  --secondary-foreground: 225 14% 24%;
+  --muted: 40 20% 92%;
+  --muted-foreground: 225 9% 38%;
+  --accent: 40 24% 88%;
+  --accent-foreground: 225 18% 18%;
+  --destructive: 8 64% 40%;
+  --destructive-foreground: 40 40% 98%;
+  --border: 38 16% 82%;
+  --input: 38 16% 78%;
+  --ring: 36 62% 42%;
+  --radius: 0.5rem;
+}
+.dark {
+  --background: 225 22% 11%;
+  --foreground: 40 22% 93%;
+  --card: 225 18% 15%;
+  --card-foreground: 40 22% 93%;
+  --popover: 225 18% 15%;
+  --popover-foreground: 40 22% 93%;
+  --primary: 38 68% 62%;
+  --primary-foreground: 30 45% 12%;
+  --secondary: 225 14% 20%;
+  --secondary-foreground: 40 18% 88%;
+  --muted: 225 14% 20%;
+  --muted-foreground: 225 12% 70%;
+  --accent: 225 14% 24%;
+  --accent-foreground: 40 20% 92%;
+  --destructive: 6 62% 60%;
+  --destructive-foreground: 225 22% 11%;
+  --border: 225 14% 24%;
+  --input: 225 14% 30%;
+  --ring: 38 68% 62%;
+}
+
+/* ============================================================
+   NON-TOKEN DECISIONS — all explicit, nothing to measure.
+   ============================================================ */
+:root {
+  /* Font stacks — system only, no network request */
+  --font-display: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Type scale */
+  --t-heading: 44px;      /* display, weight 400, line-height 1.08, tracking -0.015em */
+  --t-quote: 32px;        /* display, weight 400, line-height 1.34, tracking -0.005em */
+  --t-quote-sm: 26px;     /* below 640px */
+  --t-body: 15px;         /* ui, weight 400, line-height 1.5 */
+  --t-author: 14px;       /* ui, weight 600 */
+  --t-control: 14px;      /* ui, weight 500 */
+  --t-meta: 11px;         /* mono, uppercase, tracking 0.13em, line-height 1.4 */
+
+  /* Spacing scale — 4px base; only these steps are used */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+  --s-5: 24px; --s-6: 32px; --s-7: 44px; --s-8: 64px;
+
+  /* Radii */
+  --r-panel: 4px;         /* quote / message panels: pages, not pills */
+  --r-control: 8px;       /* button, select — i.e. var(--radius) rounded down */
+
+  /* Borders */
+  --bw: 1px;              /* every border in the design is 1px, hsl(var(--border)) */
+
+  /* Shadows — exactly two in the whole app */
+  --shadow-panel: 0 18px 44px -28px hsl(225 30% 8% / 0.30);
+  --shadow-primary: 0 8px 22px -12px hsl(var(--primary) / 0.55);
+
+  /* Motion */
+  --dur: 160ms;           /* hover / focus transitions */
+  --dur-swap: 240ms;      /* quote fade-in on arrival */
+  --ease: cubic-bezier(0.2, 0, 0.2, 1);
+
+  /* Column */
+  --col: 640px;           /* content column, centred in the 1280px target */
+}
+
+/* ============================================================
+   SPEC SHEET STYLING (this file only — do not implement)
+   ============================================================ */
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: hsl(225 12% 88%);
+  font-family: var(--font-ui);
+  color: hsl(225 18% 14%);
+  padding: 40px 24px 80px;
+}
+.sheet { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px; }
+.sheet-head { display: flex; flex-direction: column; gap: 14px; }
+.sheet-title { font-family: var(--font-display); font-size: 34px; font-weight: 400; letter-spacing: -0.015em; margin: 0; }
+.sheet-note {
+  font-family: var(--font-mono); font-size: 12px; line-height: 1.75;
+  white-space: pre-wrap; margin: 0; padding: 20px 22px;
+  background: hsl(0 0% 100%); border: 1px solid hsl(225 12% 80%); border-radius: 4px;
+}
+.themes { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+.theme-col { display: flex; flex-direction: column; gap: 0; border: 1px solid hsl(225 12% 78%); border-radius: 6px; overflow: hidden; }
+.theme-tag {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 10px 16px; background: hsl(225 14% 22%); color: hsl(40 22% 93%);
+}
+.stack { background: hsl(var(--background)); display: flex; flex-direction: column; }
+.state { border-top: 1px solid hsl(var(--border)); padding: var(--s-6) var(--s-5) var(--s-7); }
+.state:first-child { border-top: 0; }
+.state-label {
+  display: block; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: hsl(var(--muted-foreground)); margin-bottom: var(--s-5);
+}
+
+/* ============================================================
+   THE DESIGN — implement from here down
+   ============================================================ */
+
+/* --- WisdomGenerator: page shell ------------------------------------- */
+.wg {
+  font-family: var(--font-ui);
+  color: hsl(var(--foreground));
+  max-width: var(--col);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+}
+.wg-head { display: flex; flex-direction: column; gap: var(--s-3); text-align: center; }
+.wg-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--t-heading);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -0.015em;
+}
+.wg-sub {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--t-meta);
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+
+/* --- Content area: one panel, four possible contents ----------------- */
+.wg-panel {
+  position: relative;
+  border: var(--bw) solid hsl(var(--border));
+  border-radius: var(--r-panel);
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  box-shadow: var(--shadow-panel);
+  padding: var(--s-7) var(--s-6) var(--s-6);
+  min-height: 196px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* QuoteDisplay */
+.quote-mark {
+  position: absolute; top: 2px; left: 18px;
+  font-family: var(--font-display); font-size: 88px; line-height: 1;
+  color: hsl(var(--primary) / 0.22);
+  user-select: none;
+}
+.quote-body { display: flex; flex-direction: column; gap: var(--s-5); animation: quote-in var(--dur-swap) var(--ease) both; }
+.quote-text {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--t-quote);
+  font-weight: 400;
+  line-height: 1.34;
+  letter-spacing: -0.005em;
+  text-wrap: pretty;
+}
+.quote-attr { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); }
+.quote-author { font-size: var(--t-author); font-weight: 600; }
+.quote-meta {
+  font-family: var(--font-mono); font-size: var(--t-meta);
+  letter-spacing: 0.13em; text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+@keyframes quote-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Initial (empty) */
+.wg-empty { display: flex; flex-direction: column; gap: var(--s-3); }
+.wg-empty-line {
+  margin: 0; font-family: var(--font-display); font-style: italic;
+  font-size: 26px; line-height: 1.34; color: hsl(var(--muted-foreground));
+}
+
+/* LoadingMessage */
+.wg-loading { display: flex; align-items: center; gap: var(--s-3); }
+.wg-loading-text {
+  font-family: var(--font-mono); font-size: var(--t-meta);
+  letter-spacing: 0.13em; text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+.dots { display: flex; gap: 5px; }
+.dots i { width: 5px; height: 5px; border-radius: 50%; background: hsl(var(--primary)); animation: dot 1s var(--ease) infinite; }
+.dots i:nth-child(2) { animation-delay: 0.15s; }
+.dots i:nth-child(3) { animation-delay: 0.30s; }
+@keyframes dot { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+
+/* ErrorMessage */
+.wg-error { display: flex; flex-direction: column; gap: var(--s-3); }
+.wg-error-tag {
+  font-family: var(--font-mono); font-size: var(--t-meta);
+  letter-spacing: 0.13em; text-transform: uppercase;
+  color: hsl(var(--destructive));
+}
+.wg-error-text {
+  margin: 0; font-family: var(--font-mono); font-size: 13px; line-height: 1.55;
+  color: hsl(var(--foreground));
+  padding: var(--s-4) var(--s-4);
+  border: var(--bw) solid hsl(var(--destructive) / 0.45);
+  border-radius: var(--r-panel);
+  background: hsl(var(--destructive) / 0.07);
+}
+
+/* --- Controls row: native select + primary button -------------------- */
+.wg-controls { display: flex; justify-content: center; gap: var(--s-2); }
+.wg-select {
+  appearance: none;
+  font-family: var(--font-ui); font-size: var(--t-control); font-weight: 500;
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--background));
+  background-image:
+    linear-gradient(45deg, transparent 50%, hsl(var(--muted-foreground)) 50%),
+    linear-gradient(135deg, hsl(var(--muted-foreground)) 50%, transparent 50%);
+  background-position: right 18px center, right 13px center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  border: var(--bw) solid hsl(var(--input));
+  border-radius: var(--r-control);
+  padding: 0 38px 0 var(--s-4);
+  height: 46px;
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.wg-select:hover:not(:disabled) { border-color: hsl(var(--foreground) / 0.45); }
+.wg-select:focus-visible { outline: 2px solid hsl(var(--ring) / 0.7); outline-offset: 2px; }
+.wg-btn {
+  font-family: var(--font-ui); font-size: var(--t-control); font-weight: 600;
+  letter-spacing: 0.005em;
+  color: hsl(var(--primary-foreground));
+  background: hsl(var(--primary));
+  border: 0;
+  border-radius: var(--r-control);
+  height: 46px;
+  padding: 0 var(--s-5);
+  box-shadow: var(--shadow-primary);
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.wg-btn:hover:not(:disabled) { background: hsl(var(--primary) / 0.88); transform: translateY(-1px); }
+.wg-btn:active:not(:disabled) { transform: translateY(0); }
+.wg-btn:focus-visible { outline: 2px solid hsl(var(--ring) / 0.7); outline-offset: 2px; }
+.wg-btn:disabled, .wg-select:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+.wg-btn[data-loading="true"] { cursor: progress; }
+
+/* --- Responsive: below 640px ---------------------------------------- */
+@media (max-width: 640px) {
+  .wg { gap: var(--s-5); }
+  .wg-title { font-size: 32px; }
+  .wg-panel { padding: var(--s-6) var(--s-5) var(--s-5); min-height: 168px; }
+  .quote-text { font-size: var(--t-quote-sm); }
+  .quote-mark { font-size: 68px; left: 12px; }
+  .wg-controls { flex-direction: column; }
+  .wg-select, .wg-btn { width: 100%; height: 48px; }
+  .themes { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="sheet-head">
+    <h1 class="sheet-title">Wisdom Generator — design specification</h1>
+    <pre class="sheet-note">DESIGN DIRECTION — "quiet library"
+The quote is the product, so it gets the whole stage and the only serif in the app.
+Everything that is not the quote is metadata: small, monospaced, uppercase, tracked
+wide, in muted-foreground. One accent hue (brass) carries the primary button, the
+decorative quote mark and the loading dots — nowhere else. Warm bone paper in light,
+deep blue-slate ink in dark; warm off-white text in both. Panels are square-ish
+(4px) because they read as pages; controls are rounded (8px) because they read as
+controls. No gradients on the background, no illustration, no emoji, no second
+shadow.
+
+FONT STACKS (system only, no network)
+  display  Georgia, "Iowan Old Style", "Times New Roman", serif
+  ui       ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif
+  mono     ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace
+
+TYPE SCALE
+  heading    44px / 1.08 / -0.015em / display 400          (32px below 640px)
+  quote      32px / 1.34 / -0.005em / display 400          (26px below 640px)
+  empty line 26px / 1.34 / display 400 italic / muted-foreground
+  author     14px / ui 600
+  control    14px / ui 500 (select), ui 600 (button)
+  body       15px / 1.5 / ui 400
+  meta       11px / 1.4 / 0.13em tracking / UPPERCASE / mono 400
+  error text 13px / 1.55 / mono 400
+  Never set mono above 13px. Never set the serif below 26px.
+
+SPACING SCALE (4px base — only these steps)
+  4 / 8 / 12 / 16 / 24 / 32 / 44 / 64
+  column gap 32 · head gap 12 · panel padding 44 32 32 · controls gap 8
+
+RADII        panel 4px · control 8px (= --radius rounded down) · dots 50%
+BORDERS      1px hsl(var(--border)) everywhere; error panel 1px destructive/45%
+SHADOWS      panel   0 18px 44px -28px hsl(225 30% 8% / 0.30)
+             button  0 8px 22px -12px hsl(var(--primary) / 0.55)
+             Exactly two. Disabled button drops its shadow.
+MOTION       hover/focus 160ms cubic-bezier(.2,0,.2,1)
+             quote arrival 240ms fade + 6px rise
+             loading dots 1s opacity pulse, 0.15s stagger
+LAYOUT       640px centred column inside the 1280px target; panel min-height 196px
+             so the three short states do not change the button's position.
+FOCUS        2px hsl(var(--ring) / 0.7) ring, 2px offset, on button and select.
+ICONS        none required; lucide-react optional for a 14px chevron on the select
+             (the CSS caret below is the no-dependency default).
+
+BELOW 640px  Column gap 24. Heading 32px, quote 26px, mark 68px. Panel padding
+             32 24 24, min-height 168px. Controls stack vertically, select above
+             button, both full width at 48px tall. Nothing is hidden or moved.
+
+COMPONENT MAP (boundaries unchanged)
+  WisdomGenerator  .wg + .wg-head + .wg-panel wrapper + .wg-controls
+  QuoteDisplay     .quote-mark + .quote-body
+  LoadingMessage   .wg-loading
+  ErrorMessage     .wg-error
+  The select is a native &lt;select&gt; owned by WisdomGenerator. Its value is passed
+  to the fetch as the author filter; "Any author" sends no filter.</pre>
+  </div>
+
+  <div class="themes">
+
+    <!-- ================= LIGHT ================= -->
+    <div class="theme-col">
+      <div class="theme-tag">Light — :root</div>
+      <div class="stack">
+
+        <div class="state">
+          <span class="state-label">01 — Initial, no quote yet</span>
+          <div class="wg">
+            <div class="wg-head">
+              <h2 class="wg-title">Wisdom Generator</h2>
+              <p class="wg-sub">Receive a dose of wisdom with every click</p>
+            </div>
+            <div class="wg-panel">
+              <div class="wg-empty">
+                <p class="wg-empty-line">Press the button to generate some wisdom</p>
+              </div>
+            </div>
+            <div class="wg-controls">
+              <select class="wg-select" aria-label="Author">
+                <option>Any author</option>
+                <option>Yoda</option>
+                <option>Batman</option>
+                <option>Spock</option>
+                <option>Tyrion Lannister</option>
+              </select>
+              <button class="wg-btn" type="button">Generate Some Wisdom</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="state">
+          <span class="state-label">02 — Loading</span>
+          <div class="wg">
+            <div class="wg-head">
+              <h2 class="wg-title">Wisdom Generator</h2>
+              <p class="wg-sub">Receive a dose of wisdom with every click</p>
+            </div>
+            <div class="wg-panel">
+              <div class="wg-loading">
+                <span class="dots"><i></i><i></i><i></i></span>
+                <span class="wg-loading-text">Generating wisdom...</span>
+              </div>
+            </div>
+            <div class="wg-controls">
+              <select class="wg-select" aria-label="Author" disabled>
+                <option>Any author</option>
+              </select>
+              <button class="wg-btn" type="button" data-loading="true" disabled>Generating...</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="state">
+          <span class="state-label">03 — Quote displayed</span>
+          <div class="wg">
+            <div class="wg-head">
+              <h2 class="wg-title">Wisdom Generator</h2>
+              <p class="wg-sub">Receive a dose of wisdom with every click</p>
+            </div>
+            <div class="wg-panel">
+              <span class="quote-mark">&ldquo;</span>
+              <div class="quote-body">
+                <p class="quote-text">Do or do not. There is no try.</p>
+                <div class="quote-attr">
+                  <span class="quote-author">Yoda</span>
+                  <span class="quote-meta">Any author</span>
+                </div>
+              </div>
+            </div>
+            <div class="wg-controls">
+              <select class="wg-select" aria-label="Author">
+                <option>Any author</option>
+                <option>Yoda</option>
+                <option>Batman</option>
+                <option>Spock</option>
+                <option>Tyrion Lannister</option>
+              </select>
+              <button class="wg-btn" type="button">Generate Some Wisdom</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="state">
+          <span class="state-label">04 — Error</span>
+          <div class="wg">
+            <div class="wg-head">
+              <h2 class="wg-title">Wisdom Generator</h2>
+              <p class="wg-sub">Receive a dose of wisdom with every click</p>
+            </div>
+            <div class="wg-panel">
+              <div class="wg-error">
+                <span class="wg-error-tag">Request failed</span>
+                <p class="wg-error-text">API request failed: Internal Server Error</p>
+              </div>
+            </div>
+            <div class="wg-controls">
+              <select class="wg-select" aria-label="Author">
+                <option>Any author</option>
+                <option>Yoda</option>
+                <option>Batman</option>
+                <option>Spock</option>
+                <option>Tyrion Lannister</option>
+              </select>
+              <button class="wg-btn" type="button">Generate Some Wisdom</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="state">
+          <span class="state-label">05 — Button disabled</span>
+          <div class="wg">
+            <div class="wg-head">
+              <h2 class="wg-title">Wisdom Generator</h2>
+              <p class="wg-sub">Receive a dose of wisdom with every click</p>
+            </div>
+            <div class="wg-panel">
+              <div class="wg-empty">
+                <p class="wg-empty-line">Press the button to generate some wisdom</p>
+              </div>
+            </div>
+            <div class="wg-controls">
+              <select class="wg-select" aria-label="Author" disabled>
+                <option>Any author</option>
+              </select>
+              <button class="wg-btn" type="button" disabled>API Token Required</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================= DARK ================= -->
+    <div class="theme-col dark">
+      <div class="theme-tag">Dark — .dark ancestor</div>
+      <div class="stack">
+
+        <div class="state">
+          <span class="state-label">01 — Initial, no quote yet</span>
+          <div class="wg">
+            <div class="wg-head">
+              <h2 class="wg-title">Wisdom Generator</h2>
+              <p class="wg-sub">Receive a dose of wisdom with every click</p>
+            </div>
+            <div class="wg-panel">
+              <div class="wg-empty">
+                <p class="wg-empty-line">Press the button to generate some wisdom</p>
+              </div>
+            </div>
+            <div class="wg-controls">
+              <select class="wg-select" aria-label="Author">
+                <option>Any author</option>
+                <option>Yoda</option>
+                <option>Batman</option>
+                <option>Spock</option>
+                <option>Tyrion Lannister</option>
+              </select>
+              <button class="wg-btn" type="button">Generate Some Wisdom</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="state">
+          <span class="state-label">02 — Loading</span>
+          <div class="wg">
+            <div class="wg-head">
+              <h2 class="wg-title">Wisdom Generator</h2>
+              <p class="wg-sub">Receive a dose of wisdom with every click</p>
+            </div>
+            <div class="wg-panel">
+              <div class="wg-loading">
+                <span class="dots"><i></i><i></i><i></i></span>
+                <span class="wg-loading-text">Generating wisdom...</span>
+              </div>
+            </div>
+            <div class="wg-controls">
+              <select class="wg-select" aria-label="Author" disabled>
+                <option>Any author</option>
+              </select>
+              <button class="wg-btn" type="button" data-loading="true" disabled>Generating...</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="state">
+          <span class="state-label">03 — Quote displayed</span>
+          <div class="wg">
+            <div class="wg-head">
+              <h2 class="wg-title">Wisdom Generator</h2>
+              <p class="wg-sub">Receive a dose of wisdom with every click</p>
+            </div>
+            <div class="wg-panel">
+              <span class="quote-mark">&ldquo;</span>
+              <div class="quote-body">
+                <p class="quote-text">Do or do not. There is no try.</p>
+                <div class="quote-attr">
+                  <span class="quote-author">Yoda</span>
+                  <span class="quote-meta">Any author</span>
+                </div>
+              </div>
+            </div>
+            <div class="wg-controls">
+              <select class="wg-select" aria-label="Author">
+                <option>Any author</option>
+                <option>Yoda</option>
+                <option>Batman</option>
+                <option>Spock</option>
+                <option>Tyrion Lannister</option>
+              </select>
+              <button class="wg-btn" type="button">Generate Some Wisdom</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="state">
+          <span class="state-label">04 — Error</span>
+          <div class="wg">
+            <div class="wg-head">
+              <h2 class="wg-title">Wisdom Generator</h2>
+              <p class="wg-sub">Receive a dose of wisdom with every click</p>
+            </div>
+            <div class="wg-panel">
+              <div class="wg-error">
+                <span class="wg-error-tag">Request failed</span>
+                <p class="wg-error-text">API request failed: Internal Server Error</p>
+              </div>
+            </div>
+            <div class="wg-controls">
+              <select class="wg-select" aria-label="Author">
+                <option>Any author</option>
+                <option>Yoda</option>
+                <option>Batman</option>
+                <option>Spock</option>
+                <option>Tyrion Lannister</option>
+              </select>
+              <button class="wg-btn" type="button">Generate Some Wisdom</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="state">
+          <span class="state-label">05 — Button disabled</span>
+          <div class="wg">
+            <div class="wg-head">
+              <h2 class="wg-title">Wisdom Generator</h2>
+              <p class="wg-sub">Receive a dose of wisdom with every click</p>
+            </div>
+            <div class="wg-panel">
+              <div class="wg-empty">
+                <p class="wg-empty-line">Press the button to generate some wisdom</p>
+              </div>
+            </div>
+            <div class="wg-controls">
+              <select class="wg-select" aria-label="Author" disabled>
+                <option>Any author</option>
+              </select>
+              <button class="wg-btn" type="button" disabled>API Token Required</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
