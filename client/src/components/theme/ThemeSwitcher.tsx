@@ -34,7 +34,7 @@ export const ThemeSwitcher = (): React.JSX.Element => {
     mediaQuery.addEventListener('change', handleSystemThemeChange)
     window.localStorage.setItem(THEME_STORAGE_KEY, themeMode)
 
-    return () => {
+    return (): void => {
       mediaQuery.removeEventListener('change', handleSystemThemeChange)
     }
   }, [themeMode])
@@ -45,7 +45,7 @@ export const ThemeSwitcher = (): React.JSX.Element => {
         type="button"
         className="theme-option"
         aria-pressed={themeMode === 'light'}
-        onClick={() => setThemeMode('light')}
+        onClick={() => { setThemeMode('light') }}
       >
         <Sun aria-hidden="true" size={14} strokeWidth={1.8} />
         <span>Light</span>
@@ -54,7 +54,7 @@ export const ThemeSwitcher = (): React.JSX.Element => {
         type="button"
         className="theme-option"
         aria-pressed={themeMode === 'dark'}
-        onClick={() => setThemeMode('dark')}
+        onClick={() => { setThemeMode('dark') }}
       >
         <Moon aria-hidden="true" size={14} strokeWidth={1.8} />
         <span>Dark</span>
@@ -63,7 +63,7 @@ export const ThemeSwitcher = (): React.JSX.Element => {
         type="button"
         className="theme-option"
         aria-pressed={themeMode === 'auto'}
-        onClick={() => setThemeMode('auto')}
+        onClick={() => { setThemeMode('auto') }}
       >
         <Monitor aria-hidden="true" size={14} strokeWidth={1.8} />
         <span>Auto</span>

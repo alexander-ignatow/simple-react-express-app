@@ -1,5 +1,5 @@
-import { WisdomGenerator } from '@/components/wisdom/WisdomGenerator'
 import { ThemeSwitcher } from '@/components/theme/ThemeSwitcher'
+import { WisdomGenerator } from '@/components/wisdom/WisdomGenerator'
 
 const App = (): React.JSX.Element => {
   return (

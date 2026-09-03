@@ -42,7 +42,7 @@ const stubSystemTheme = (initialMatches: boolean): SystemThemeController => {
   return {
     emitChange: (nextMatches: boolean): void => {
       matches = nextMatches
-      listeners.forEach((listener) => listener({ matches } as MediaQueryListEvent))
+      listeners.forEach((listener) => { listener({ matches } as MediaQueryListEvent) })
     },
   }
 }
