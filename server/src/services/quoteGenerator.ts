@@ -90,3 +90,16 @@ export const generateRandomQuote = (): Quote => {
   const randomIndex = Math.floor(Math.random() * QUOTES.length)
   return QUOTES[randomIndex]
 }
+
+// Case-insensitive author match. Returns null when the author has no quotes so the
+// caller can distinguish "unknown author" from "no quote available".
+export const generateQuoteByAuthor = (author: string): Quote | null => {
+  const normalizedAuthor = author.trim().toLowerCase()
+  const matches = QUOTES.filter((quote) => quote.author.toLowerCase() === normalizedAuthor)
+
+  if (matches.length === 0) {
+    return null
+  }
+
+  return matches[Math.floor(Math.random() * matches.length)]
+}

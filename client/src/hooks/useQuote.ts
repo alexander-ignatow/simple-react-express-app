@@ -14,7 +14,7 @@ interface UseQuoteReturn {
   error: string | null
   isConfigured: boolean
   isLoading: boolean
-  fetchQuote: () => Promise<void>
+  fetchQuote: (author?: string) => Promise<void>
 }
 
 export const useQuote = (): UseQuoteReturn => {
@@ -25,7 +25,7 @@ export const useQuote = (): UseQuoteReturn => {
   const [error, setError] = useState<string | null>(isConfigured ? null : MISSING_API_TOKEN_MESSAGE)
   const [isLoading, setIsLoading] = useState(false)
 
-  const fetchQuote = async (): Promise<void> => {
+  const fetchQuote = async (author?: string): Promise<void> => {
     if (!isConfigured) {
       setError(MISSING_API_TOKEN_MESSAGE)
       return
@@ -34,8 +34,10 @@ export const useQuote = (): UseQuoteReturn => {
     setIsLoading(true)
     setError(null)
 
+    const query = author && author.trim().length > 0 ? `?author=${encodeURIComponent(author)}` : ''
+
     try {
-      const response = await fetch(`${apiUrl}/quote`, {
+      const response = await fetch(`${apiUrl}/quote${query}`, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${apiToken}`,
@@ -44,7 +46,9 @@ export const useQuote = (): UseQuoteReturn => {
       })
 
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.statusText}`)
+        // The API reports an unknown author as 404 with `{ error }`; prefer that message.
+        const body = (await response.json().catch(() => null)) as { error?: string } | null
+        throw new Error(body?.error ?? `API request failed: ${response.statusText}`)
       }
 
       const data = (await response.json()) as Quote
